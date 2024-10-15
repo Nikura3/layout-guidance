@@ -1,7 +1,7 @@
 
 general:
   save_path:  './example_output'
-  model_path: 'runwayml/stable-diffusion-v1-5'
+  model_path: 'CompVis/stable-diffusion-v1-4'
   unet_config: './conf/unet/config.json'
   real_image_editing: False
 

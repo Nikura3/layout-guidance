@@ -1,6 +1,6 @@
 {
   "_class_name": "UNet2DConditionModel",
-  "_diffusers_version": "0.6.0",
+  "_diffusers_version": "0.11.1",
   "act_fn": "silu",
   "attention_head_dim": 8,
   "block_out_channels": [
