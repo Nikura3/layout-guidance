@@ -1,3 +1,4 @@
+# Testing layout-guidance for my master's thesis
 # Training-Free Layout Control with Cross-Attention Guidance
 [Minghao Chen](https://silent-chen.github.io), [Iro Laina](), [Andrea Vedaldi](https://www.robots.ox.ac.uk/~vedaldi/)
 
