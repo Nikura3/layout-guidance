@@ -1,6 +1,6 @@
 import torch
 import math
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 import logging
 import os
 
@@ -74,13 +74,13 @@ def Pharse2idx(prompt, phrases):
 
 def draw_box(pil_img, bboxes, phrases, save_path):
     draw = ImageDraw.Draw(pil_img)
-    font = ImageFont.truetype('./FreeMono.ttf', 25)
+    #font = ImageFont.truetype('./FreeMono.ttf', 25)
     phrases = [x.strip() for x in phrases.split(';')]
     for obj_bboxes, phrase in zip(bboxes, phrases):
         for obj_bbox in obj_bboxes:
             x_0, y_0, x_1, y_1 = obj_bbox[0], obj_bbox[1], obj_bbox[2], obj_bbox[3]
             draw.rectangle([int(x_0 * 512), int(y_0 * 512), int(x_1 * 512), int(y_1 * 512)], outline='red', width=5)
-            draw.text((int(x_0 * 512) + 5, int(y_0 * 512) + 5), phrase, font=font, fill=(255, 0, 0))
+            draw.text((int(x_0 * 512) + 5, int(y_0 * 512) + 5), phrase, fill=(255, 0, 0))
     pil_img.save(save_path)
 
 
