@@ -20,17 +20,19 @@ import torchvision.transforms.functional as tf
 
 def NormalizeData(data,size=512):
     data=np.divide(data,size)
-    return data
+    return np.round(data,2)
 
 def make_Samples():
     prompts = ["A hello kitty toy is playing with a purple ball." #0
                ]    
 
-    #bbox = [[[51,102,256,410]],[[384,307,486,410]]#0]
     bbox = [
+        [[51,102,256,410],[384,307,486,410]] #0
+            ]
+    """ bbox = [
         [[[0.1, 0.2, 0.5, 0.8]], [[0.75, 0.6, 0.95, 0.8]]]
         ]
-
+ """
     phrases = [["hello kitty","ball"]]
 
     data_dict = {
@@ -196,10 +198,15 @@ def main(config:RunConfig):
 
         #setup the noise generator on cpu
         g = torch.Generator('cpu').manual_seed(seed)
-
+        
+        #adapted for inference method (normalized and different list structure)
+        converted_bboxes=[]
+        for b in config.bbox:
+            normalized_bbox = [round(x / 512,2) for x in b]
+            converted_bboxes.append([normalized_bbox])
         
         # Inference
-        image = inference(device, unet, vae, tokenizer, text_encoder, config.prompt, config.bbox, config.phrases, g, config)[0]
+        image = inference(device, unet, vae, tokenizer, text_encoder, config.prompt, converted_bboxes, config.phrases, g, config)[0]
 
         
         #end stopwatch
@@ -212,16 +219,9 @@ def main(config:RunConfig):
         image.save(output_path +"/"+ str(seed) + ".jpg")
         #list of tensors
         gen_images.append(tf.pil_to_tensor(image))
-
-        correct_bboxes=[]
-        for b in bench[sample_to_generate]['bbox']:
-            temp=[]
-            for x in b[0]:
-                temp.append(int(x*512))
-            correct_bboxes.append(temp)
         
         #draw the bounding boxes
-        image=torchvision.utils.draw_bounding_boxes(tf.pil_to_tensor(image),torch.Tensor(correct_bboxes),labels=bench[sample_to_generate]['phrases'],colors=['blue', 'red', 'purple', 'orange', 'green', 'yellow', 'black', 'gray', 'white'],width=4)
+        image=torchvision.utils.draw_bounding_boxes(tf.pil_to_tensor(image),torch.Tensor(config.bbox),labels=config.phrases,colors=['blue', 'red', 'purple', 'orange', 'green', 'yellow', 'black', 'gray', 'white'],width=4)
         #list of tensors
         gen_bboxes_images.append(image)
         tf.to_pil_image(image).save(output_path+str(seed)+"_bboxes.png")
