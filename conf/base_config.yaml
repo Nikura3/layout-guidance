@@ -1,6 +1,6 @@
 
 general:
-  save_path:  './example_output'
+  save_path:  './results'
   model_path: 'CompVis/stable-diffusion-v1-4'
   unet_config: './conf/unet/config.json'
   real_image_editing: False
