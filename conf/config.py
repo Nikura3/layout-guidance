@@ -18,8 +18,10 @@ class RunConfig:
     #--INFERENCE--
     # Guiding text prompt
     prompt: str = ''
+    # ID Text prompt
+    prompt_id:str=''
     # Bounding boxes
-    bbox: List[list] = field(default_factory=lambda: [[], []])
+    bboxes: List[list] = field(default_factory=lambda: [[], []])
     # Phrases for the bboxes
     phrases: List[str] = field(default_factory=lambda: ['', ''])
     # Seeds for generating noise

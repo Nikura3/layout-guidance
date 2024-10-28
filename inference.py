@@ -18,22 +18,19 @@ import numpy as np
 import torchvision.utils
 import torchvision.transforms.functional as tf
 
-def NormalizeData(data,size=512):
-    data=np.divide(data,size)
-    return np.round(data,2)
-
 def make_Samples():
-    prompts = ["A hello kitty toy is playing with a purple ball." #0
+    prompts = ["A hello kitty toy is playing with a purple ball.", #0
+               "A bus and a bench" #1
                ]    
 
     bbox = [
-        [[51,102,256,410],[384,307,486,410]] #0
+        [[51,102,256,410],[384,307,486,410]],#0
+        [[2,121,251,460], [274,345,503,496]]#1 
             ]
-    """ bbox = [
-        [[[0.1, 0.2, 0.5, 0.8]], [[0.75, 0.6, 0.95, 0.8]]]
-        ]
- """
-    phrases = [["hello kitty","ball"]]
+    
+    phrases = [["hello kitty","ball"],
+               ["bus", "bench"]#1
+               ]
 
     data_dict = {
     i: {
@@ -45,16 +42,70 @@ def make_Samples():
     }
     return data_dict
 
+def make_QBench():
+
+    prompts = ["A bus", #0
+               "A bus and a bench", #1
+               "A bus next to a bench and a bird", #2
+               "A bus next to a bench with a bird and a pizza", #3
+               "A green bus", #4
+               "A green bus and a red bench", #5
+               "A green bus next to a red bench and a pink bird", #6
+               "A green bus next to a red bench with a pink bird and a yellow pizza", #7
+               "A bus on the left of a bench", #8
+               "A bus on the left of a bench and a bird", #9
+               "A bus and a pizza on the left of a bench and a bird", #10
+               "A bus and a pizza on the left of a bench and below a bird", #11
+               ]
+
+    ids = []
+
+    for i in range(len(prompts)):
+        ids.append(str(i).zfill(3))
+    
+
+    bboxes = [[[2,121,251,460]],#0
+            [[2,121,251,460], [274,345,503,496]],#1
+            [[2,121,251,460], [274,345,503,496],[344,32,500,187]],#2
+            [[2,121,251,460], [274,345,503,496],[344,32,500,187],[58,327,187,403]],#3
+            [[2,121,251,460]],#4
+            [[2,121,251,460], [274,345,503,496]],#5
+            [[2,121,251,460], [274,345,503,496],[344,32,500,187]],#6
+            [[2,121,251,460], [274,345,503,496],[344,32,500,187],[58,327,187,403]],#7
+            [[2,121,251,460],[274,345,503,496]],#8
+            [[2,121,251,460],[274,345,503,496],[344,32,500,187]],#9
+            [[2,121,251,460], [58,327,187,403], [274,345,503,496],[344,32,500,187]],#10
+            [[2,121,251,460], [58,327,187,403], [274,345,503,496],[344,32,500,187]],#11
+            ]
+
+    phrases = [["bus"],#0
+               ["bus", "bench"],#1
+               ["bus", "bench", "bird"],#2
+               ["bus","bench","bird","pizza"],#3
+               ["bus"],#4
+               ["bus", "bench"],#5
+               ["bus", "bench", "bird"],#6
+               ["bus","bench","bird","pizza"],#7
+               ["bus","bench"],#8
+               ["bus","bench","bird"],#9
+               ["bus","pizza","bench","bird"],#11
+               ["bus","pizza","bench","bird"]#12
+               ]
+
+    data_dict = {
+    i: {
+        "id": ids[i],
+        "prompt": prompts[i],
+        "bboxes": bboxes[i],
+        "phrases": phrases[i]
+    }
+    for i in range(len(prompts))
+    }
+    return data_dict
+
+
 def inference(device, unet, vae, tokenizer, text_encoder, prompt, bboxes, phrases, generator, config:RunConfig):
 
-
-    """ logger.info("Inference")
-    logger.info(f"Prompt: {prompt}")
-    logger.info(f"Phrases: {phrases}") """
-
-    # Get Object Positions
-
-    #logger.info("Convert Phrases to Object Positions")
     #Convert a list of string into a unique string separated by ';'
     phrases = "; ".join(phrases)
     object_positions = Pharse2idx(prompt, phrases)
@@ -149,40 +200,11 @@ def main(config:RunConfig):
     text_encoder = CLIPTextModel.from_pretrained(config.model_path, subfolder="text_encoder")
     vae = AutoencoderKL.from_pretrained(config.model_path, subfolder="vae")
 
-    """ if config.general.real_image_editing:
-        text_encoder, tokenizer = load_text_inversion(text_encoder, tokenizer, config.real_image_editing.placeholder_token, config.real_image_editing.text_inversion_path)
-        unet.load_state_dict(torch.load(config.real_image_editing.dreambooth_path)['unet'])
-        text_encoder.load_state_dict(torch.load(config.real_image_editing.dreambooth_path)['encoder']) """
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     unet.to(device)
     text_encoder.to(device)
     vae.to(device)
-
-    # ------------------ example input ------------------
-    """ examples = {"prompt": "A hello kitty toy is playing with a purple ball.",
-                "phrases": "hello kitty; ball",
-                "bboxes": [[[0.1, 0.2, 0.5, 0.8]], [[0.75, 0.6, 0.95, 0.8]]],
-                'save_path': config.general.save_path
-                } """
-
-    """ # ------------------ real image editing example input ------------------
-    if config.general.real_image_editing:
-        examples = {"prompt": "A {} is standing on grass.".format(config.real_image_editing.placeholder_token),
-                    "phrases": "{}".format(config.real_image_editing.placeholder_token),
-                    "bboxes": [[[0.4, 0.2, 0.9, 0.9]]],
-                    'save_path': config.general.save_path
-                    }
-    # --------------------------------------------------- """
-    
-    #logger = setup_logger(save_path, __name__)
-
-    #logger.info(config)
-    
-    # Save config
-    #logger.info("save config to {}".format(os.path.join(save_path, 'config.yaml')))
-    #OmegaConf.save(config, os.path.join(save_path, 'config.yaml'))
 
     #intialize logger
     l=logger.Logger(output_path)
@@ -201,10 +223,10 @@ def main(config:RunConfig):
         
         #adapted for inference method (normalized and different list structure)
         converted_bboxes=[]
-        for b in config.bbox:
+        for b in config.bboxes:
             normalized_bbox = [round(x / 512,2) for x in b]
             converted_bboxes.append([normalized_bbox])
-        
+
         # Inference
         image = inference(device, unet, vae, tokenizer, text_encoder, config.prompt, converted_bboxes, config.phrases, g, config)[0]
 
@@ -221,7 +243,7 @@ def main(config:RunConfig):
         gen_images.append(tf.pil_to_tensor(image))
         
         #draw the bounding boxes
-        image=torchvision.utils.draw_bounding_boxes(tf.pil_to_tensor(image),torch.Tensor(config.bbox),labels=config.phrases,colors=['blue', 'red', 'purple', 'orange', 'green', 'yellow', 'black', 'gray', 'white'],width=4)
+        image=torchvision.utils.draw_bounding_boxes(tf.pil_to_tensor(image),torch.Tensor(config.bboxes),labels=config.phrases,colors=['blue', 'red', 'purple', 'orange', 'green', 'yellow', 'black', 'gray', 'white'],width=4)
         #list of tensors
         gen_bboxes_images.append(image)
         tf.to_pil_image(image).save(output_path+str(seed)+"_bboxes.png")
@@ -241,24 +263,17 @@ def main(config:RunConfig):
     #joined_image = vis_utils.get_image_grid(gen_bboxes_images)
     #joined_image.save(str(config.output_path) +"/"+ config.prompt + "_bboxes.png")
 
-
-    """ # Save example images
-    for index, pil_image in enumerate(pil_images):
-        image_path = os.path.join(config.general.save_path, examples['prompt']+'.png')
-        logger.info('save example image to {}'.format(image_path))
-        draw_box(pil_image, examples['bboxes'], examples['phrases'], image_path)
- """
 if __name__ == "__main__":
     height = 512
     width = 512
     seeds = range(1,17)
 
-    bench=make_Samples()
+    bench=make_QBench()
 
-    model_name="Sample_SD_CAG"
+    model_name="QBench-CAG"
     
     for sample_to_generate in range(0,len(bench)):
-        output_path = "./results/"+model_name+"/"+ bench[sample_to_generate]['prompt'] + "/"
+        output_path = "./results/"+model_name+"/"+ bench[sample_to_generate]['id']+'_'+bench[sample_to_generate]['prompt'] + "/"
 
         if (not os.path.isdir(output_path)):
             os.makedirs(output_path)
@@ -266,9 +281,10 @@ if __name__ == "__main__":
         torch.cuda.empty_cache()
 
         main(RunConfig(
+            prompt_id=bench[sample_to_generate]['id'],
             prompt=bench[sample_to_generate]['prompt'],
             phrases=bench[sample_to_generate]['phrases'],
             seeds=seeds,
-            bbox=bench[sample_to_generate]['bbox'],
+            bboxes=bench[sample_to_generate]['bboxes'],
             output_path=output_path,
         )) 
