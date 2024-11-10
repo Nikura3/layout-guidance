@@ -206,9 +206,6 @@ def main(config:RunConfig):
     text_encoder.to(device)
     vae.to(device)
 
-    #intialize logger
-    l=logger.Logger(output_path)
-
     gen_images = []
     gen_bboxes_images=[]
 
@@ -243,26 +240,23 @@ def main(config:RunConfig):
         gen_images.append(tf.pil_to_tensor(image))
         
         #draw the bounding boxes
-        image=torchvision.utils.draw_bounding_boxes(tf.pil_to_tensor(image),torch.Tensor(config.bboxes),labels=config.phrases,colors=['blue', 'red', 'purple', 'orange', 'green', 'yellow', 'black', 'gray', 'white'],width=4)
+        image=torchvision.utils.draw_bounding_boxes(tf.pil_to_tensor(image),
+                                                    torch.Tensor(config.bboxes),
+                                                    labels=config.phrases,
+                                                    colors=['blue', 'red', 'purple', 'orange', 'green', 'yellow', 'black', 'gray', 'white'],
+                                                    width=4,
+                                                    font="font.ttf",
+                                                    font_size=25)
         #list of tensors
         gen_bboxes_images.append(image)
         tf.to_pil_image(image).save(output_path+str(seed)+"_bboxes.png")
 
-    #log gpu stats
-    l.log_gpu_memory_instance()
-    #save to csv_file
-    l.save_log_to_csv(config.prompt)
-
     # save a grid of results across all seeds without bboxes
     tf.to_pil_image(torchvision.utils.make_grid(tensor=gen_images,nrow=4,padding=0)).save(str(config.output_path) +"/"+ config.prompt + ".png")
-    #joined_image = vis_utils.get_image_grid(gen_images)
-    #joined_image.save(str(config.output_path) +"/"+ config.prompt + ".png")
-
+ 
     # save a grid of results across all seeds with bboxes
     tf.to_pil_image(torchvision.utils.make_grid(tensor=gen_bboxes_images,nrow=4,padding=0)).save(str(config.output_path) +"/"+ config.prompt + "_bboxes.png")
-    #joined_image = vis_utils.get_image_grid(gen_bboxes_images)
-    #joined_image.save(str(config.output_path) +"/"+ config.prompt + "_bboxes.png")
-
+ 
 if __name__ == "__main__":
     height = 512
     width = 512
@@ -271,6 +265,12 @@ if __name__ == "__main__":
     bench=make_QBench()
 
     model_name="QBench-CAG"
+    
+    if (not os.path.isdir("./results/"+model_name)):
+            os.makedirs("./results/"+model_name)
+    
+    #intialize logger
+    l=logger.Logger("./results/"+model_name+"/")
     
     for sample_to_generate in range(0,len(bench)):
         output_path = "./results/"+model_name+"/"+ bench[sample_to_generate]['id']+'_'+bench[sample_to_generate]['prompt'] + "/"
@@ -288,3 +288,7 @@ if __name__ == "__main__":
             bboxes=bench[sample_to_generate]['bboxes'],
             output_path=output_path,
         )) 
+    #log gpu stats
+    l.log_gpu_memory_instance()
+    #save to csv_file
+    l.save_log_to_csv(model_name)
