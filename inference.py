@@ -314,7 +314,7 @@ if __name__ == "__main__":
             phrases.append(bench[id]['obj4'])
             bboxes.append([int(x) for x in bench[id]['bbox4'].split(',')])
         
-        output_path = "./results/"+model_name+"/"+ id +'_'+bench[id]['prompt'] + "/"
+        output_path = "./results/"+model_name+"/"+ id +'_'+bench[id]['prompt'].replace(",", "") + "/"
 
         if (not os.path.isdir(output_path)):
             os.makedirs(output_path)
@@ -324,7 +324,7 @@ if __name__ == "__main__":
 
         main(RunConfig(
             prompt_id=id,
-            prompt=bench[id]['prompt'],
+            prompt=bench[id]['prompt'].replace(",", ""),
             phrases=phrases,
             seeds=seeds,
             bboxes=bboxes,
