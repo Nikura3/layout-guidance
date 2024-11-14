@@ -14,6 +14,8 @@ from tqdm import tqdm
 from utils import load_text_inversion
 from conf.config import RunConfig
 import numpy as np
+import pandas as pd
+import math
 
 import torchvision.utils
 import torchvision.transforms.functional as tf
@@ -103,6 +105,23 @@ def make_QBench():
     }
     return data_dict
 
+def readPromptsCSV(path):
+    df = pd.read_csv(path, dtype={'id': str})
+    conversion_dict={}
+    for i in range(0,len(df)):
+        conversion_dict[df.at[i,'id']] = {
+            'prompt': df.at[i,'prompt'],
+            'obj1': df.at[i,'obj1'],
+            'bbox1':df.at[i,'bbox1'],
+            'obj2': df.at[i,'obj2'],
+            'bbox2':df.at[i,'bbox2'],
+            'obj3': df.at[i,'obj3'],
+            'bbox3':df.at[i,'bbox3'],
+            'obj4': df.at[i,'obj4'],
+            'bbox4':df.at[i,'bbox4'],
+        }
+    
+    return conversion_dict   
 
 def inference(device, unet, vae, tokenizer, text_encoder, prompt, bboxes, phrases, generator, config:RunConfig):
 
@@ -243,10 +262,10 @@ def main(config:RunConfig):
         image=torchvision.utils.draw_bounding_boxes(tf.pil_to_tensor(image),
                                                     torch.Tensor(config.bboxes),
                                                     labels=config.phrases,
-                                                    colors=['blue', 'red', 'purple', 'orange', 'green', 'yellow', 'black', 'gray', 'white'],
+                                                    colors=['green', 'green', 'green', 'green', 'green', 'green', 'green', 'green', 'green'],
                                                     width=4,
                                                     font="font.ttf",
-                                                    font_size=25)
+                                                    font_size=20)
         #list of tensors
         gen_bboxes_images.append(image)
         tf.to_pil_image(image).save(output_path+str(seed)+"_bboxes.png")
@@ -262,9 +281,10 @@ if __name__ == "__main__":
     width = 512
     seeds = range(1,17)
 
-    bench=make_QBench()
+    #bench=make_QBench()
+    bench=readPromptsCSV(os.path.join("prompts","prompt_collection_bboxes.csv"))
 
-    model_name="QBench-CAG"
+    model_name="PromptCollection-SD_CAG"
     
     if (not os.path.isdir("./results/"+model_name)):
             os.makedirs("./results/"+model_name)
@@ -272,20 +292,42 @@ if __name__ == "__main__":
     #intialize logger
     l=logger.Logger("./results/"+model_name+"/")
     
-    for sample_to_generate in range(0,len(bench)):
-        output_path = "./results/"+model_name+"/"+ bench[sample_to_generate]['id']+'_'+bench[sample_to_generate]['prompt'] + "/"
+    # ids to iterate the dict
+    ids = []
+    for i in range(0,len(bench)):
+        ids.append(str(i).zfill(3))
+    
+    for id in ids:
+        bboxes=[]
+        phrases=[]
+        
+        if not (isinstance(bench[id]['obj1'], (int,float)) and math.isnan(bench[id]['obj1'])):
+            phrases.append(bench[id]['obj1'])
+            bboxes.append([int(x) for x in bench[id]['bbox1'].split(',')])
+        if not (isinstance(bench[id]['obj2'], (int,float)) and math.isnan(bench[id]['obj2'])):
+            phrases.append(bench[id]['obj2'])
+            bboxes.append([int(x) for x in bench[id]['bbox2'].split(',')])
+        if not (isinstance(bench[id]['obj3'], (int,float)) and math.isnan(bench[id]['obj3'])):
+            phrases.append(bench[id]['obj3'])
+            bboxes.append([int(x) for x in bench[id]['bbox3'].split(',')])
+        if not (isinstance(bench[id]['obj4'], (int,float)) and math.isnan(bench[id]['obj4'])):
+            phrases.append(bench[id]['obj4'])
+            bboxes.append([int(x) for x in bench[id]['bbox4'].split(',')])
+        
+        output_path = "./results/"+model_name+"/"+ id +'_'+bench[id]['prompt'] + "/"
 
         if (not os.path.isdir(output_path)):
             os.makedirs(output_path)
-        print("Sample number ",sample_to_generate)
+            
+        print("Sample number ", id)
         torch.cuda.empty_cache()
 
         main(RunConfig(
-            prompt_id=bench[sample_to_generate]['id'],
-            prompt=bench[sample_to_generate]['prompt'],
-            phrases=bench[sample_to_generate]['phrases'],
+            prompt_id=id,
+            prompt=bench[id]['prompt'],
+            phrases=phrases,
             seeds=seeds,
-            bboxes=bench[sample_to_generate]['bboxes'],
+            bboxes=bboxes,
             output_path=output_path,
         )) 
     #log gpu stats
