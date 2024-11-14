@@ -31,7 +31,7 @@ id,category,prompt,obj1,bbox1,obj2,bbox2,obj3,bbox3,obj4,bbox4
 029,missing_elements,"A cup, an apple, a couch and a girl",cup,"43,144,157,309",apple,"195,215,291,304",couch,"25,292,278,463",girl,"327,89,474,469"
 030,missing_elements,"A leopard, a bridge, a snail and a table",leopard,"45,246,155,467",bridge,"32,31,477,218",snail,"285,259,399,339",table,"485,474,485,474"
 031,missing_elements,"A pepper, a whale, a leopard and a tiger",pepper,"31,359,104,477",whale,"37,41,488,257",leopard,"153,285,276,471",tiger,"317,287,457,472"
-032,unconventional_layout,A butterfly below a cockroach,butterly,"84,279,425,455",cockroach,"183,150,345,250",,,,
+032,unconventional_layout,A butterfly below a cockroach,butterfly,"84,279,425,455",cockroach,"183,150,345,250",,,,
 033,unconventional_layout,A bottle near a telephone,bottle,"46,111,204,464",telephone,"224,360,397,464",,,,
 034,unconventional_layout,A mushroom near a pepper,mushroom,"76,316,254,477",pepper,"268,313,471,480",,,,
 035,unconventional_layout,A kangaroo below a whale,kangaroo,"149,350,323,479",whale,"119,169,408,315",,,,
@@ -52,7 +52,7 @@ id,category,prompt,obj1,bbox1,obj2,bbox2,obj3,bbox3,obj4,bbox4
 050,unconventional_layout,A shark far from a whale and a salmon next to a dolphin,shark,"25,394,213,495",whale,"297,20,479,125",salmon,"59,210,227,311",dolphin,"237,212,411,311"
 051,unconventional_layout,A leopard on the right of a boy and a beetle next to a cat,leopard,"328,257,471,479",boy,"217,289,310,478",beetle,"22,59,101,224",cat,"129,61,222,226"
 052,unconventional_layout,A tractor on a road and an apple to the right of a lamp,tractor,"87,169,359,347",road,"23,353,477,481",apple,"346,39,431,103",lamp,"266,17,330,109"
-053,unconventional_layout,A dinousaur far from a camel and a leopard below an oak,dinosaur,"40,334,137,485",camel,"404,38,496,167",leopard,"192,331,302,483",oak,"40,37,381,305"
+053,unconventional_layout,A dinosaur far from a camel and a leopard below an oak,dinosaur,"40,334,137,485",camel,"404,38,496,167",leopard,"192,331,302,483",oak,"40,37,381,305"
 054,unconventional_layout,A table to the left of a house and a keyboard to the right of a frog,table,"58,401,227,471",house,"258,163,482,477",keyboard,"289,34,456,108",frog,"75,293,192,370"
 055,unconventional_layout,An orchid below a chair and a lamp on a couch,orchid,"162,357,273,491",chair,"46,142,204,323",lamp,"358,138,434,203",couch,"245,222,493,347"
 056,unconventional_layout,A mouse on a bridge and a tractor under an oak,mouse,"371,110,468,168",bridge,"19,180,496,286",tractor,"60,409,208,488",oak,"229,312,494,489"
@@ -86,7 +86,7 @@ id,category,prompt,obj1,bbox1,obj2,bbox2,obj3,bbox3,obj4,bbox4
 084,overlapping_bboxes,"A boy, a dog and a sunflower",boy,"289,111,472,469",dog,"190,374,385,475",sunflower,"89,234,222,494",,
 085,overlapping_bboxes,"A rose, a frog and a cat",rose,"94,214,167,465",frog,"122,353,271,486",cat,"239,315,405,498",,
 086,overlapping_bboxes,"A wolf, a man and a bowl",wolf,"42,263,312,469",man,"229,21,491,490",bowl,"105,366,211,452",,
-087,overlapping_bboxes,"A motorcycle, a rocket and a butterly",motorcycle,"51,307,407,490",rocket,"59,21,176,422",butterfly,"327,223,480,352",,
+087,overlapping_bboxes,"A motorcycle, a rocket and a butterfly",motorcycle,"51,307,407,490",rocket,"59,21,176,422",butterfly,"327,223,480,352",,
 088,overlapping_bboxes,"A television, a bee, a car and an elephant",television,"20,90,478,454",bee,"377,121,449,201",car,"212,286,462,425",elephant,"39,133,323,412"
 089,overlapping_bboxes,"A tulip, a palm, a tiger and a bus",tulip,"67,316,168,452",palm,"123,44,363,482",tiger,"254,233,487,467",bus,"28,177,504,492"
 090,overlapping_bboxes,"A pear, a tree, a mouse and a wardrobe",pear,"57,374,161,486",tree,"133,43,380,487",mouse,"231,412,313,489",wardrobe,"355,169,510,492"
