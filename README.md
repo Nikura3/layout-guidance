@@ -23,13 +23,6 @@ If this repo is helpful for you, please consider to cite it. Thank you! :)
 
 ```
 
-## To Do List
-
-- [x] Basic Backward Guidance
-- [ ] Support Different Layer of Backward Guidance
-- [ ] Forward Guidance
-- [x] Real Image Editting Example
-
 ## Acknowledgements
 
 This research is supported by ERC-CoG UNION 101001212. 
