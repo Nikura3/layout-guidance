@@ -1,0 +1,9 @@
+id,prompt,obj1,bbox1,token1,obj2,bbox2,token2,obj3,bbox3,token3,obj4,bbox4,token4
+000,A bus,bus,"2,121,251,460",2,,,,,,,,,
+001,A bus and a bench,bus,"2,121,251,460",2,bench,"274,345,503,496",6,,,,,,
+002,A bus next to a bench and a bird,bus,"2,121,251,460",2,bench,"274,345,503,496",6,bird,"344,32,500,187",9,,,
+003,A bus next to a bench with a bird and a pizza,bus,"2,121,251,460",2,bench,"274,345,503,496",6,bird,"344,32,500,187",9,pizza,"58,327,187,403",12
+004,A green bus,bus,"2,121,251,460",3,,,,,,,,,
+005,A green bus and a red bench,bus,"2,121,251,460",3,bench,"274,345,503,496",7,,,,,,
+006,A green bus next to a red bench and a pink bird,bus,"2,121,251,460",3,bench,"274,345,503,496",8,bird,"344,32,500,187",12,,,
+007,A green bus next to a red bench with a pink bird and a yellow pizza,bus,"2,121,251,460",3,bench,"274,345,503,496",8,bird,"344,32,500,187",12,pizza,"58,327,187,403",16
