@@ -8,7 +8,6 @@ from my_model import unet_2d_condition
 import json
 from PIL import Image
 from utils import compute_ca_loss, Pharse2idx, draw_box, setup_logger
-import hydra
 import os
 from tqdm import tqdm
 from utils import load_text_inversion
@@ -16,94 +15,12 @@ from conf.config import RunConfig
 import numpy as np
 import pandas as pd
 import math
+from pathlib import Path
 
 import torchvision.utils
 import torchvision.transforms.functional as tf
 
-def make_Samples():
-    prompts = ["A hello kitty toy is playing with a purple ball.", #0
-               "A bus and a bench" #1
-               ]    
 
-    bbox = [
-        [[51,102,256,410],[384,307,486,410]],#0
-        [[2,121,251,460], [274,345,503,496]]#1 
-            ]
-    
-    phrases = [["hello kitty","ball"],
-               ["bus", "bench"]#1
-               ]
-
-    data_dict = {
-    i: {
-        "prompt": prompts[i],
-        "bbox": bbox[i],
-        "phrases": phrases[i]
-    }
-    for i in range(len(prompts))
-    }
-    return data_dict
-
-def make_QBench():
-
-    prompts = ["A bus", #0
-               "A bus and a bench", #1
-               "A bus next to a bench and a bird", #2
-               "A bus next to a bench with a bird and a pizza", #3
-               "A green bus", #4
-               "A green bus and a red bench", #5
-               "A green bus next to a red bench and a pink bird", #6
-               "A green bus next to a red bench with a pink bird and a yellow pizza", #7
-               "A bus on the left of a bench", #8
-               "A bus on the left of a bench and a bird", #9
-               "A bus and a pizza on the left of a bench and a bird", #10
-               "A bus and a pizza on the left of a bench and below a bird", #11
-               ]
-
-    ids = []
-
-    for i in range(len(prompts)):
-        ids.append(str(i).zfill(3))
-    
-
-    bboxes = [[[2,121,251,460]],#0
-            [[2,121,251,460], [274,345,503,496]],#1
-            [[2,121,251,460], [274,345,503,496],[344,32,500,187]],#2
-            [[2,121,251,460], [274,345,503,496],[344,32,500,187],[58,327,187,403]],#3
-            [[2,121,251,460]],#4
-            [[2,121,251,460], [274,345,503,496]],#5
-            [[2,121,251,460], [274,345,503,496],[344,32,500,187]],#6
-            [[2,121,251,460], [274,345,503,496],[344,32,500,187],[58,327,187,403]],#7
-            [[2,121,251,460],[274,345,503,496]],#8
-            [[2,121,251,460],[274,345,503,496],[344,32,500,187]],#9
-            [[2,121,251,460], [58,327,187,403], [274,345,503,496],[344,32,500,187]],#10
-            [[2,121,251,460], [58,327,187,403], [274,345,503,496],[344,32,500,187]],#11
-            ]
-
-    phrases = [["bus"],#0
-               ["bus", "bench"],#1
-               ["bus", "bench", "bird"],#2
-               ["bus","bench","bird","pizza"],#3
-               ["bus"],#4
-               ["bus", "bench"],#5
-               ["bus", "bench", "bird"],#6
-               ["bus","bench","bird","pizza"],#7
-               ["bus","bench"],#8
-               ["bus","bench","bird"],#9
-               ["bus","pizza","bench","bird"],#11
-               ["bus","pizza","bench","bird"]#12
-               ]
-
-    data_dict = {
-    i: {
-        "id": ids[i],
-        "prompt": prompts[i],
-        "bboxes": bboxes[i],
-        "phrases": phrases[i]
-    }
-    for i in range(len(prompts))
-    }
-    return data_dict
 
 def readPromptsCSV(path):
     df = pd.read_csv(path, dtype={'id': str})
@@ -209,25 +126,7 @@ def inference(device, unet, vae, tokenizer, text_encoder, prompt, bboxes, phrase
 
 
 #@hydra.main(version_base=None, config_path="conf", config_name="base_config")
-def main(config:RunConfig):
-
-    # build and load model
-    with open(config.unet_config) as f:
-        unet_config = json.load(f)
-    unet = unet_2d_condition.UNet2DConditionModel(**unet_config).from_pretrained(config.model_path, subfolder="unet")
-    tokenizer = CLIPTokenizer.from_pretrained(config.model_path, subfolder="tokenizer")
-    text_encoder = CLIPTextModel.from_pretrained(config.model_path, subfolder="text_encoder")
-    vae = AutoencoderKL.from_pretrained(config.model_path, subfolder="vae")
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    print(f"Using device: {device}")
-    if device.type == "cuda":
-        print(f"GPU Name: {torch.cuda.get_device_name(device)}")
-
-    unet.to(device)
-    text_encoder.to(device)
-    vae.to(device)
+def main(config: RunConfig, unet, vae, tokenizer, text_encoder, l, device):
 
     gen_images = []
     gen_bboxes_images=[]
@@ -258,7 +157,7 @@ def main(config:RunConfig):
 
 
         #image.save(prompt_output_path / f'{seed}.png')
-        image.save(output_path +"/"+ str(seed) + ".jpg")
+        image.save(config.output_path +"/"+ str(seed) + ".jpg")
         #list of tensors
         gen_images.append(tf.pil_to_tensor(image))
         
@@ -272,7 +171,7 @@ def main(config:RunConfig):
                                                     font_size=20)
         #list of tensors
         gen_bboxes_images.append(image)
-        tf.to_pil_image(image).save(output_path+str(seed)+"_bboxes.png")
+        tf.to_pil_image(image).save(config.output_path+str(seed)+"_bboxes.png")
 
     # save a grid of results across all seeds without bboxes
     tf.to_pil_image(torchvision.utils.make_grid(tensor=gen_images,nrow=4,padding=0)).save(str(config.output_path) +"/"+ config.prompt + ".png")
@@ -280,15 +179,17 @@ def main(config:RunConfig):
     # save a grid of results across all seeds with bboxes
     tf.to_pil_image(torchvision.utils.make_grid(tensor=gen_bboxes_images,nrow=4,padding=0)).save(str(config.output_path) +"/"+ config.prompt + "_bboxes.png")
  
+
+
 if __name__ == "__main__":
     height = 512
     width = 512
     seeds = range(1,17)
 
     #bench=make_QBench()
-    bench=readPromptsCSV(os.path.join("prompts","prompt_collection_bboxes.csv"))
+    bench=readPromptsCSV(os.path.join("prompts","fullNewDataset.csv"))
 
-    model_name="PromptCollection-SD_CAG"
+    model_name="fullNewDataset-SD_CAG"
     
     if (not os.path.isdir("./results/"+model_name)):
             os.makedirs("./results/"+model_name)
@@ -296,10 +197,32 @@ if __name__ == "__main__":
     #intialize logger
     l=logger.Logger("./results/"+model_name+"/")
     
+    model_path = 'CompVis/stable-diffusion-v1-4'
+    unet_config = Path('./conf/unet/config.json')
+
+    # build and load model
+    with open(unet_config) as f:
+        unet_config = json.load(f)
+        
+    unet = unet_2d_condition.UNet2DConditionModel(**unet_config).from_pretrained(model_path, subfolder="unet")
+    tokenizer = CLIPTokenizer.from_pretrained(model_path, subfolder="tokenizer")
+    text_encoder = CLIPTextModel.from_pretrained(model_path, subfolder="text_encoder")
+    vae = AutoencoderKL.from_pretrained(model_path, subfolder="vae")
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    print(f"Using device: {device}")
+    if device.type == "cuda":
+        print(f"GPU Name: {torch.cuda.get_device_name(device)}")
+
+    unet.to(device)
+    text_encoder.to(device)
+    vae.to(device)
+    
     # ids to iterate the dict
     ids = []
     for i in range(0,len(bench)):
-        ids.append(str(i).zfill(3))
+        ids.append(str(i).zfill(4))
     
     for id in ids:
         bboxes=[]
@@ -333,7 +256,14 @@ if __name__ == "__main__":
             seeds=seeds,
             bboxes=bboxes,
             output_path=output_path,
-        )) 
+        ), 
+        unet, 
+        vae, 
+        tokenizer, 
+        text_encoder, 
+        l,
+        device
+        )
     #log gpu stats
     l.log_gpu_memory_instance()
     #save to csv_file
