@@ -1,16 +1,15 @@
+from logging import config
 import time
 import torch
-from omegaconf import OmegaConf
 from transformers import CLIPTextModel, CLIPTokenizer
 from diffusers import AutoencoderKL, LMSDiscreteScheduler
 import logger
 from my_model import unet_2d_condition
 import json
 from PIL import Image
-from utils import compute_ca_loss, Pharse2idx, draw_box, setup_logger
+from utils import compute_ca_loss, Pharse2idx
 import os
 from tqdm import tqdm
-from utils import load_text_inversion
 from conf.config import RunConfig
 import numpy as np
 import pandas as pd
@@ -24,21 +23,22 @@ import torchvision.transforms.functional as tf
 
 def readPromptsCSV(path):
     df = pd.read_csv(path, dtype={'id': str})
-    conversion_dict={}
-    for i in range(0,len(df)):
-        conversion_dict[df.at[i,'id']] = {
-            'prompt': df.at[i,'prompt'],
-            'obj1': df.at[i,'obj1'],
-            'bbox1':df.at[i,'bbox1'],
-            'obj2': df.at[i,'obj2'],
-            'bbox2':df.at[i,'bbox2'],
-            'obj3': df.at[i,'obj3'],
-            'bbox3':df.at[i,'bbox3'],
-            'obj4': df.at[i,'obj4'],
-            'bbox4':df.at[i,'bbox4'],
-        }
-    
-    return conversion_dict   
+    conversion_dict = {}
+    for i in range(len(df)):
+        entry = {'prompt': df.at[i, 'prompt']}
+        # Dynamically find all obj/bbox columns and keep original naming
+        for col in df.columns:
+            if col.startswith('obj'):
+                idx = col[3:]
+                bbox_col = f'bbox{idx}'
+                obj_val = df.at[i, col]
+                bbox_val = df.at[i, bbox_col] if bbox_col in df.columns else None
+                # Always include obj and bbox, even if NaN for retro compatibility
+                entry[col] = obj_val
+                if bbox_col in df.columns:
+                    entry[bbox_col] = bbox_val
+        conversion_dict[df.at[i, 'id']] = entry
+    return conversion_dict
 
 def inference(device, unet, vae, tokenizer, text_encoder, prompt, bboxes, phrases, generator, config:RunConfig):
 
@@ -147,7 +147,13 @@ def main(config: RunConfig, unet, vae, tokenizer, text_encoder, l, device):
             converted_bboxes.append([normalized_bbox])
 
         # Inference
-        image = inference(device, unet, vae, tokenizer, text_encoder, config.prompt, converted_bboxes, config.phrases, g, config)[0]
+        # Clean prompt for Pharse2idx compatibility (no commas)
+        clean_prompt = config.prompt.replace(",", "")
+
+        # Also clean phrases (remove commas from individual words)
+        clean_phrases = [p.replace(",", "") for p in config.phrases]
+
+        image = inference(device, unet, vae, tokenizer, text_encoder, clean_prompt, converted_bboxes, clean_phrases, g, config)[0]
 
         
         #end stopwatch
@@ -225,23 +231,19 @@ if __name__ == "__main__":
         ids.append(str(i).zfill(4))
     
     for id in ids:
-        bboxes=[]
-        phrases=[]
+        bboxes = []
+        phrases = []
+        # Dynamically find all obj/bbox columns for each id
+        for col in bench[id]:
+            if col.startswith('obj') and bench[id][col] is not None and not (isinstance(bench[id][col], (int, float)) and math.isnan(bench[id][col])):
+                idx = col[3:]  # get the number after 'obj'
+                bbox_col = f'bbox{idx}'
+                if bbox_col in bench[id] and bench[id][bbox_col] is not None:
+                    phrases.append(bench[id][col])
+                    bboxes.append([int(x) for x in bench[id][bbox_col].split(',')])
+
         
-        if not (isinstance(bench[id]['obj1'], (int,float)) and math.isnan(bench[id]['obj1'])):
-            phrases.append(bench[id]['obj1'])
-            bboxes.append([int(x) for x in bench[id]['bbox1'].split(',')])
-        if not (isinstance(bench[id]['obj2'], (int,float)) and math.isnan(bench[id]['obj2'])):
-            phrases.append(bench[id]['obj2'])
-            bboxes.append([int(x) for x in bench[id]['bbox2'].split(',')])
-        if not (isinstance(bench[id]['obj3'], (int,float)) and math.isnan(bench[id]['obj3'])):
-            phrases.append(bench[id]['obj3'])
-            bboxes.append([int(x) for x in bench[id]['bbox3'].split(',')])
-        if not (isinstance(bench[id]['obj4'], (int,float)) and math.isnan(bench[id]['obj4'])):
-            phrases.append(bench[id]['obj4'])
-            bboxes.append([int(x) for x in bench[id]['bbox4'].split(',')])
-        
-        output_path = "./results/"+model_name+"/"+ id +'_'+bench[id]['prompt'].replace(",", "") + "/"
+        output_path = "./results/"+model_name+"/"+ id +'_'+bench[id]['prompt'] + "/"
 
         if (not os.path.isdir(output_path)):
             os.makedirs(output_path)
@@ -251,7 +253,7 @@ if __name__ == "__main__":
 
         main(RunConfig(
             prompt_id=id,
-            prompt=bench[id]['prompt'].replace(",", ""),
+            prompt=bench[id]['prompt'],
             phrases=phrases,
             seeds=seeds,
             bboxes=bboxes,
@@ -268,3 +270,4 @@ if __name__ == "__main__":
     l.log_gpu_memory_instance()
     #save to csv_file
     l.save_log_to_csv(model_name)
+    print("End of generation process for ", model_name)
